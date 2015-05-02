@@ -1,0 +1,62 @@
+#!/usr/bin/expect  --
+
+#$0 ip
+#$1 port
+#$2 user
+#$3 passwd
+
+set timeout 15
+
+if { [llength $argv] < 4 } {
+    puts "Usage: $argv0 ip port user passwd"
+    exit 1
+}
+
+set ip     [lindex $argv 0]
+set port   [lindex $argv 1]
+set user   [lindex $argv 2]
+set passwd [lindex $argv 3]
+
+if {$port != "" && $user != ""} {
+    spawn ssh -p $port $user@$ip
+} elseif {$port == "" && $user != ""} {
+    spawn ssh $user@$ip
+} elseif {$port != "" && $user == ""} {
+    spawn ssh -P $port $ip
+} else {
+    spawn ssh $ip
+}
+
+expect {
+    "#" {
+    }
+
+    "assword:" {
+        send "[lindex $argv 3]\r"
+    }
+
+    "yes/no)?" {
+        send "yes\r"
+        expect "assword:"
+        send "[lindex $argv 3]\r"
+    }
+    "Last login*" {
+        interact
+        exit 0
+    }
+}
+
+expect {
+    "assword:" {
+        exit 2
+    }
+    "#*" {
+        interact
+    }
+    "$*" {
+        interact
+    }
+    ">*" {
+        interact
+    }
+}
